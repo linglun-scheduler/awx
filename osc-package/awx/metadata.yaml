@@ -1,0 +1,20 @@
+name: awx
+version: "1.0.0"
+appVersion: "24.6.1"
+description: "Ansible AWX on Huawei Cloud CCE"
+displayName: "AWX"
+briefDescription: "AWX provides a web-based user interface, REST API, and task engine built on top of Ansible."
+source: ISV
+architecture:
+  - x86_64
+  - aarch64
+categories:
+  - Automation
+maintainers:
+  - name: dx_x2era
+    email: dx_x2era@example.com
+provider:
+  name: dx_x2era
+  url: https://github.com/linglun-scheduler/awx
+scenes:
+  - CCE

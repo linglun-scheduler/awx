@@ -13,15 +13,25 @@ echo "========================================"
 echo "  AWX OSC 服务包 - 上传指引"
 echo "========================================"
 echo ""
+echo "⚠️  请上传 awx-24.6.1.zip (OSC 服务包)"
+echo "   不是 awx-1.0.0.tgz (Helm 包)！"
+echo ""
 
 # 检查服务包是否存在
 if [ ! -f "$PACKAGE" ]; then
   echo "❌ 服务包不存在: $PACKAGE"
-  echo "   请先运行: cd $SCRIPT_DIR && zip -r $PACKAGE awx/"
+  echo ""
+  echo "   重新打包:"
+  echo "   cd $SCRIPT_DIR/../awx-chart"
+  echo "   helm package . -d $SCRIPT_DIR/awx/package/"
+  echo "   cd $SCRIPT_DIR"
+  echo "   zip -r $PACKAGE awx/"
   exit 1
 fi
 
 echo "📦 服务包: $PACKAGE ($(du -h "$PACKAGE" | cut -f1))"
+echo "📦 内部结构:"
+unzip -l "$PACKAGE" 2>&1 | tail -6
 echo ""
 
 echo "═══════════════════════════════════════════"

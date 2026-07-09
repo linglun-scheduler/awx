@@ -1,0 +1,64 @@
+apiVersion: awx.ansible.com/v1beta1
+kind: AWX
+metadata:
+  name: awx
+  namespace: cloud
+spec:
+  # ── 镜像配置 (华为云 SWR) ──
+  image: swr.cn-east-2.myhuaweicloud.com/dx_x2era/awx
+  image_version: 24.6.1
+  image_pull_policy: IfNotPresent
+
+  # ── 执行环境 ──
+  ee_images:
+    - name: "AWX EE 24.6.1"
+      image: swr.cn-east-2.myhuaweicloud.com/dx_x2era/awx-ee:24.6.1
+
+  # ── 管理员 ──
+  admin_user: admin
+  admin_password_secret: awx-admin-password
+
+  # ── Redis (用 SWR 镜像，Docker Hub 国内不通) ──
+  redis_image: swr.cn-east-2.myhuaweicloud.com/dx_x2era/redis
+  redis_image_version: "7"
+
+  # ── PostgreSQL (用 SWR 镜像，quay.io 国内不通) ──
+  postgres_image: swr.cn-east-2.myhuaweicloud.com/dx_x2era/postgresql-15
+  postgres_image_version: latest
+
+  # ── 服务暴露 (LoadBalancer) ──
+  service_type: LoadBalancer
+  loadbalancer_protocol: http
+  loadbalancer_port: 80
+
+  # ── 副本数 ──
+  web_replicas: 1
+  task_replicas: 1
+
+  # ── PostgreSQL 持久化 (10Gi, csi-disk) ──
+  postgres_storage_class: csi-disk
+  postgres_storage_requirements:
+    requests:
+      storage: 10Gi
+
+  # ── Projects 持久化 (使用已有的 pv-efs-awx SFS Turbo 100Gi RWX) ──
+  projects_persistence: true
+  projects_existing_claim: awx-projects-claim
+
+  # ── 资源配置 ──
+  web_resource_requirements:
+    requests:
+      cpu: 500m
+      memory: 2Gi
+  task_resource_requirements:
+    requests:
+      cpu: 500m
+      memory: 2Gi
+  postgres_resource_requirements:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+  # ── 其他 ──
+  create_preload_data: true
+  admin_email: admin@example.com

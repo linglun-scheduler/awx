@@ -5,21 +5,20 @@
 ## 目录结构
 
 ```
+├── awx-chart/                       # Helm Chart (核心交付物)
+│   ├── Chart.yaml                  # 图表定义
+│   ├── values.yaml                 # 可配参数
+│   ├── crds/                       # AWX Operator CRD
+│   └── templates/                  # K8s 资源模板
+├── osc-package/                     # OSC 服务包构建
+│   ├── upload.sh                   # 上传脚本
+│   └── awx/
+│       ├── images/mapping.yaml     # 镜像映射
+│       └── package/                # Helm Chart tgz
+├── deploy/                          # 手动部署 YAML (参考)
 ├── .omo/
 │   ├── drafts/                     # 设计文档/草稿
 │   ├── plans/                      # 实施计划
-│   ├── deploy/
-│   │   ├── awx-cce/                # 手动部署 YAML (参考)
-│   │   ├── awx-chart/              # Helm Chart (主推)
-│   │   │   ├── Chart.yaml          # 图表定义
-│   │   │   ├── values.yaml         # 可配参数
-│   │   │   ├── crds/               # AWX Operator CRD
-│   │   │   └── templates/          # K8s 资源模板
-│   │   └── awx-osc/                # OSC 服务包
-│   │       ├── upload.sh           # 上传脚本
-│   │       └── awx/images/
-│   │           ├── mapping.yaml    # 镜像映射
-│   │           └── package/        # Helm Chart tgz
 │   └── evidence/                   # 验证证据 (git ignored)
 ├── infra-cce.yaml                   # CCE kubeconfig (git ignored)
 ├── ssl/                             # TLS 证书 (git ignored)
@@ -44,7 +43,7 @@ export SWR_PASS="<temporary-token>"
 export ADMIN_PASS="<your-admin-password>"
 
 # 2. 渲染并部署
-cd .omo/deploy/awx-chart
+cd awx-chart
 helm template awx . \
   --namespace cloud \
   --set swr.username="$SWR_USER" \
@@ -58,11 +57,11 @@ helm template awx . \
 
 ```bash
 # 1. 打包 Helm Chart
-cd .omo/deploy/awx-chart
-helm package . -d ../awx-osc/awx/package/
+cd awx-chart
+helm package . -d ../osc-package/awx/package/
 
 # 2. 打包 OSC 服务包
-cd ../awx-osc
+cd ../osc-package
 zip -r /tmp/awx-24.6.1.zip awx/
 
 # 3. 上传到 OSC 控制台

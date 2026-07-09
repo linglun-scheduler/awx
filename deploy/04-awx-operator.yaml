@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: awx-operator
+  namespace: cloud
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: awx-operator
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: awx-operator
+    spec:
+      serviceAccountName: awx-operator
+      containers:
+        - name: awx-operator
+          image: swr.cn-east-2.myhuaweicloud.com/dx_x2era/awx-operator:2.19.1
+          args:
+            - --leader-elect
+          env:
+            - name: ANSIBLE_GATHERING
+              value: explicit
+            - name: WATCH_NAMESPACE
+              value: cloud
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: awx-operator
+  namespace: cloud
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: awx-operator
+  namespace: cloud
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps", "endpoints", "events", "persistentvolumeclaims", "pods", "secrets", "services", "serviceaccounts"]
+    verbs: ["*"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets"]
+    verbs: ["*"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["*"]
+  - apiGroups: ["route.openshift.io"]
+    resources: ["routes"]
+    verbs: ["*"]
+  - apiGroups: ["awx.ansible.com"]
+    resources: ["awxs", "awxmeshingresses"]
+    verbs: ["*"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["*"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: awx-operator
+  namespace: cloud
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: awx-operator
+subjects:
+  - kind: ServiceAccount
+    name: awx-operator
+    namespace: cloud

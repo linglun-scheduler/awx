@@ -1,0 +1,4 @@
+# This file is applied from upstream GitHub:
+# kubectl apply -f https://raw.githubusercontent.com/ansible/awx-operator/2.19.1/config/crd/bases/awx.ansible.com_awxs.yaml
+#
+# If the cluster cannot reach GitHub, download and apply locally.

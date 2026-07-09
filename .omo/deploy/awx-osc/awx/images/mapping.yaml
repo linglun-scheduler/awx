@@ -1,0 +1,9 @@
+# AWX 镜像映射 - 告知 OSC values.yaml 中的镜像字段
+# 上传后 OSC 会自动将这些字段替换为 OSC 仓库的实际地址
+image:
+  global.imageRegistry: swr.cn-east-2.myhuaweicloud.com/dx_x2era
+  images.awx: awx:24.6.1
+  images.awxOperator: awx-operator:2.19.1
+  images.awxEE: awx-ee:24.6.1
+  images.redis: redis:7
+  images.postgresql: postgresql-15:latest

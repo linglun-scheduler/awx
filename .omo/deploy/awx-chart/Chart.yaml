@@ -12,3 +12,11 @@ home: https://github.com/ansible/awx
 sources:
   - https://github.com/ansible/awx
   - https://github.com/ansible/awx-operator
+maintainers:
+  - name: dx_x2era
+    email: dx_x2era@example.com
+annotations:
+  source: ISV
+  categories: Automation
+  architecture: x86_64,aarch64
+  scenes: CCE

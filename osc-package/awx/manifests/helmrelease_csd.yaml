@@ -9,4 +9,25 @@ spec:
     metadata:
       name: helmreleases.osc.huaweicloud.com
   serviceEntityDependencies: []
-  defaultConfiguration: ""
+  defaultConfiguration:
+    apiVersion: osc.huaweicloud.com/v1
+    kind: HelmRelease
+    metadata:
+      name: awx
+    spec:
+      chartName: awx
+      chartVersion: 1.0.0
+      values:
+        global:
+          imageRegistry: swr.cn-east-2.myhuaweicloud.com/dx_x2era
+        admin:
+          password: ""
+        service:
+          type: LoadBalancer
+        storage:
+          postgres:
+            size: 10Gi
+            storageClass: csi-disk
+          projects:
+            enabled: true
+            existingClaim: awx-projects-claim

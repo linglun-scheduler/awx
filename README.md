@@ -16,13 +16,11 @@
 │       ├── images/mapping.yaml     # 镜像映射
 │       └── package/                # Helm Chart tgz
 ├── deploy/                          # 手动部署 YAML (参考)
-├── .omo/
+├── .omo/                            # 规划文档 (git ignored)
 │   ├── drafts/                     # 设计文档/草稿
-│   ├── plans/                      # 实施计划
-│   └── evidence/                   # 验证证据 (git ignored)
-├── infra-cce.yaml                   # CCE kubeconfig (git ignored)
-├── ssl/                             # TLS 证书 (git ignored)
-└── README.md
+│   └── plans/                      # 实施计划
+├── README.md
+└── .gitignore
 ```
 
 ## 快速开始

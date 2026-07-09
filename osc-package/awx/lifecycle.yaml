@@ -1,1 +1,4 @@
-# Helm 类型服务生命周期文件，内容为空
+install:
+  strategy: deployment
+  deployments: []
+

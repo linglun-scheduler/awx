@@ -9,8 +9,10 @@
 .idea/
 
 # Helm 构建产物
-awx-chart/*.tgz
-osc-package/awx/package/*.tgz
+products/*/chart/*.tgz
+products/*/osc-package/*.zip
+products/*/deploy/*.tgz
+products/*/deploy/*.zip
 
 # Docker
 .docker/
@@ -29,6 +31,9 @@ ssl/
 # 规划证据
 .omo/evidence/
 .omo/run-continuation/
+
+# Codegraph
+.codegraph
 
 # Work logs
 *.log

@@ -1,246 +1,157 @@
-# Ansible AWX 华为云部署方案
+# 华为云 CCE 应用部署方案
 
-在华为云 CCE 上部署 AWX，通过 Helm Chart + OSC 服务包实现跨平台交付。
+通过 Helm Chart + OSC 服务包，在华为云 CCE 上部署云原生应用，实现跨平台交付。
+
+## 产品目录
+
+| 产品 | 版本 | 目录 | Release |
+|------|------|------|---------|
+| **AWX** | 24.6.1 | `products/awx/` | v1.0.0 |
+| **GitLab CE** | 17.3.0 | `products/gitlab/` | v1.1.0 |
 
 ## 目录结构
 
 ```
-├── awx-chart/                       # Helm Chart (核心交付物)
-│   ├── Chart.yaml                  # 图表定义
-│   ├── values.yaml                 # 可配参数
-│   ├── crds/                       # AWX Operator CRD
-│   └── templates/                  # K8s 资源模板
-├── osc-package/                     # OSC 服务包构建
-│   ├── upload.sh                   # 上传脚本
-│   └── awx/
-│       ├── images/mapping.yaml     # 镜像映射
-│       └── package/                # Helm Chart tgz
-├── deploy/                          # 手动部署 YAML (参考)
-├── .omo/                            # 规划文档 (git ignored)
-│   ├── drafts/                     # 设计文档/草稿
-│   └── plans/                      # 实施计划
+├── products/
+│   ├── awx/                          # Ansible AWX
+│   │   ├── chart/                    # Helm Chart
+│   │   │   ├── Chart.yaml
+│   │   │   ├── values.yaml
+│   │   │   ├── crds/
+│   │   │   └── templates/
+│   │   ├── osc-package/              # OSC 服务包
+│   │   │   └── awx/
+│   │   │       ├── metadata.yaml
+│   │   │       ├── lifecycle.yaml
+│   │   │       ├── manifests/        # CRD + CSD
+│   │   │       └── raw/              # Helm Chart 源文件
+│   │   └── deploy/                   # 手动部署 YAML (参考)
+│   └── gitlab/                       # GitLab CE
+│       ├── chart/                    # Helm Chart
+│       │   ├── Chart.yaml
+│       │   ├── values.yaml
+│       │   └── templates/
+│       ├── osc-package/              # OSC 服务包
+│       │   └── gitlab/
+│       │       ├── metadata.yaml
+│       │       ├── lifecycle.yaml
+│       │       ├── manifests/
+│       │       └── raw/
+├── .omo/                             # 设计文档/规划
 ├── README.md
 └── .gitignore
 ```
 
-## 快速开始
+## AWX
 
-### 前置条件
+AWX 是基于 Ansible 的 Web UI、REST API 和任务引擎，Red Hat Ansible Automation Platform 的上游项目。
 
-- 华为云 CCE 集群 (K8s v1.15+)
-- 镜像已推送到 SWR: `swr.cn-east-2.myhuaweicloud.com/dx_x2era/`
-- `kubectl` 可访问集群
-- `helm` v3+
+### 容器架构
 
-### Helm 部署
+```
+Operator → Web (nginx+uwsgi+daphne) + Task (task+ee+redis+rsyslog) + PostgreSQL
+```
+
+### 存储
+
+| 卷 | 大小 | 类型 | 用途 |
+|----|------|------|------|
+| PostgreSQL PVC | 10Gi | csi-disk SSD | 数据库 |
+| Projects PV | 100Gi | SFS Turbo RWX | Playbook 项目 |
+
+### 快速部署
 
 ```bash
-# 1. 设置 SWR 凭证 (从华为云控制台获取)
-export SWR_USER="cn-east-2@..."
-export SWR_PASS="<temporary-token>"
-export ADMIN_PASS="<your-admin-password>"
-
-# 2. 渲染并部署
-cd awx-chart
-helm template awx . \
-  --namespace cloud \
-  --set swr.username="$SWR_USER" \
-  --set swr.password="$SWR_PASS" \
-  --set admin.password="$ADMIN_PASS" \
-  --set storage.projects.existingClaim="awx-projects-claim" \
+cd products/awx/chart
+helm template awx . --namespace cloud \
+  --set swr.username=<user> --set swr.password=<token> \
+  --set admin.password=<password> \
+  --set storage.projects.existingClaim=awx-projects-claim \
   | kubectl apply --server-side --force-conflicts -f -
 ```
 
-### OSC 服务包发布
+## GitLab CE
+
+GitLab Community Edition — Git 仓库管理、CI/CD、DevOps 平台。
+
+### 容器架构
+
+```
+LoadBalancer :80 / :443 / :22
+       │
+  ┌────▼──────────────┐
+  │  gitlab-ce:17.3.0 │  Omnibus 单容器
+  │  data  ── 50Gi    │  Git 仓库 / 数据库 / 制品
+  │  config ── 10Gi   │  配置文件
+  │  logs   ── 10Gi   │  日志文件
+  └───────────────────┘
+```
+
+### 存储
+
+| 卷 | 大小 | 类型 | 用途 |
+|----|------|------|------|
+| data | 50Gi | csi-disk | Git 仓库 / PostgreSQL / 制品 |
+| config | 10Gi | csi-disk | GitLab 配置 |
+| logs | 10Gi | csi-disk | 日志 |
+
+### 快速部署
 
 ```bash
-# 1. 打包 Helm Chart
-cd awx-chart
-helm package . -d ../osc-package/awx/package/
+cd products/gitlab/chart
+helm template gitlab . --namespace gitlab \
+  --set domain=gitlab.example.com \
+  --set admin.password=<password> \
+  --set swr.username=<user> --set swr.password=<token> \
+  | kubectl apply --server-side --force-conflicts -f -
+```
 
-# 2. 打包 OSC 服务包
-cd ../osc-package
-zip -r /tmp/awx-24.6.1.zip awx/
+## OSC 服务包
+
+OSC（云原生服务中心）可将应用发布为标准化服务包，通过可视化界面部署到 CCE、UCS 等平台。
+
+### 使用方式
+
+```bash
+# 1. 构建 Helm Chart
+cd products/<product>/chart
+helm package . -d /tmp/
+
+# 2. 构建 OSC 包
+cd products/<product>/osc-package
+zip -r /tmp/<product>-<version>.zip <product>/
 
 # 3. 上传到 OSC 控制台
 #    https://console.huaweicloud.com/osc
 #    我的服务 → 私有服务 → 上传服务
 ```
 
-## AWX 容器架构
+### 可配置参数
 
-### 总体架构
+每个产品在 OSC 表单中提供 30+ 可配置参数，通过 CRD `openAPIV3Schema` 驱动表单自动生成。
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     cloud 命名空间                           │
-│                                                              │
-│  ┌────────────────────────┐   ┌────────────────────────┐    │
-│  │      awx-operator      │   │     awx-postgres-15     │    │
-│  │  (1 容器: awx-operator)│   │  (1 容器: postgresql)   │    │
-│  │  • 监听 AWX CR 变化     │   │  • 持久化: 10Gi SSD    │    │
-│  │  • 自动创建/管理资源    │   │  • 存储 AWX 业务数据   │    │
-│  └──────────┬─────────────┘   └────────────────────────┘    │
-│             │ 管理 AWX CR                                    │
-│             ▼                                                │
-│  ┌────────────────────────────────────────────────────┐     │
-│  │                    awx-web                         │     │
-│  │  ┌─────────┐ ┌──────────┐ ┌──────────┐            │     │
-│  │  │  nginx  │ │  uwsgi   │ │  daphne  │ ← 3 容器   │     │
-│  │  │ (反向代理│ │ (Django  │ │ (WebSocket│           │     │
-│  │  │  + 静态)│ │  API)    │ │  服务)   │           │     │
-│  │  └─────────┘ └──────────┘ └──────────┘            │     │
-│  └────────────────────────────────────────────────────┘     │
-│                                                              │
-│  ┌────────────────────────────────────────────────────┐     │
-│  │                    awx-task                        │     │
-│  │  ┌──────────┐ ┌────────┐ ┌────────┐ ┌─────────┐   │     │
-│  │  │ awx-task │ │ awx-ee │ │  redis │ │ rsyslog │   │     │
-│  │  │ (作业执行│ │ (Recep-│ │ (缓存/ │ │ (日志   │   │     │
-│  │  │  + 调度) │ │  tor)  │ │ 队列)  │ │  收集)  │   │     │
-│  │  └──────────┘ └────────┘ └────────┘ └─────────┘   │     │
-│  │             4 容器 (共享网络)                       │     │
-│  └────────────────────────────────────────────────────┘     │
-│                                                              │
-│  ┌────────────────────────────────────────────────────┐     │
-│  │              awx-projects-claim (PVC)              │     │
-│  │     100Gi SFS Turbo /var/lib/awx/projects          │     │
-│  │   Web 和 Task 容器同时挂载，共享项目文件            │     │
-│  └────────────────────────────────────────────────────┘     │
-└─────────────────────────────────────────────────────────────┘
-```
+## 跨平台发布
 
-### Pod 角色详解
+| 平台 | 说明 | OSC scenes 配置 |
+|------|------|-----------------|
+| **CCE** | 华为云 K8s 集群 | `CCE` |
+| **UCS** | 多云/混合云/边缘 | `CCE,UCS` |
+| **AttachedCluster** | 任意 K8s 集群 | 通过 UCS 接入 |
 
-#### 1. awx-operator (Operator Pod)
+## Release 版本
 
-| 容器 | 镜像 | 说明 |
-|------|------|------|
-| awx-operator | `awx-operator:2.19.1` | 监听 AWX CR，自动创建/管理 web、task、postgres 等资源 |
+| Tag | 产品 | 下载 |
+|-----|------|------|
+| v1.0.0 | AWX 24.6.1 | [Releases](https://github.com/linglun-scheduler/awx/releases/tag/v1.0.0) |
+| v1.1.0 | GitLab CE 17.3.0 | [Releases](https://github.com/linglun-scheduler/awx/releases/tag/v1.1.0) |
 
-**工作流程**：
-```
-用户创建 AWX CR → Operator 检测到变化
-  → 创建 PostgreSQL StatefulSet
-  → 创建 Redis (内嵌在 web/task pod)
-  → 创建 Web Deployment (nginx + uwsgi + daphne)
-  → 创建 Task Deployment (task + ee + redis + rsyslog)
-  → 执行数据库迁移
-  → 验证所有 Pod 就绪
-```
+## 镜像仓库
 
-#### 2. awx-web (Web Pod) — 3 容器
-
-| 容器 | 镜像 | 端口 | 说明 |
-|------|------|------|------|
-| `redis` | `redis:7` | 6379 | 缓存和消息队列（每个 web/task pod 独立运行） |
-| `awx-web` | `awx:24.6.1` | 8052 | Django 应用 + nginx 反向代理 + uwsgi WSGI + daphne ASGI |
-| `awx-rsyslog` | `awx:24.6.1` | — | 日志转发 |
-
-**请求流向**：
-```
-用户浏览器 → LoadBalancer:80 → nginx:8052
-  → uwsgi (Django REST API)  ←→ PostgreSQL:5432
-  → daphne (WebSocket)        ←→ Redis:6379
-```
-
-#### 3. awx-task (Task Pod) — 4 容器
-
-| 容器 | 镜像 | 说明 |
-|------|------|------|
-| `redis` | `redis:7` | 任务队列和缓存 |
-| `awx-task` | `awx:24.6.1` | 作业调度、执行、回调处理 |
-| `awx-ee` | `awx-ee:24.6.1` | Receptor 节点，接收和执行 Ansible 作业 |
-| `awx-rsyslog` | `awx:24.6.1` | 作业日志收集转发 |
-
-**作业执行流程**：
-```
-用户通过 API 启动作业
-  → awx-task 创建作业记录
-  → Receptor 网格分配执行节点
-  → awx-ee 容器内执行 Ansible Playbook
-  → 实时日志通过 rsyslog 回传
-  → 作业结果写入 PostgreSQL
-```
-
-#### 4. awx-postgres-15 (数据库 Pod)
-
-| 容器 | 镜像 | 说明 |
-|------|------|------|
-| postgresql | `postgresql-15:latest` | AWX 主数据库，持久化所有业务数据 |
-
-### 容器间通信
-
-```
-awx-web ──HTTP──→ awx-task  (API 调用)
-awx-web ──SQL───→ PostgreSQL (数据读写)
-awx-task ──SQL───→ PostgreSQL (数据读写)
-awx-web ──TCP───→ Redis      (缓存/队列)
-awx-task ──TCP───→ Redis      (任务队列)
-awx-task ──Receptor──→ awx-ee (网格通信)
-                    ↕
-                Receptor 网格
-                    ↕
-           其他执行节点 (横向扩展)
-```
-
-### 关键设计决策
-
-| 决策 | 方案 | 理由 |
-|------|------|------|
-| Redis 位置 | 内嵌在 web/task pod | 避免外部 Redis 依赖，简化运维 |
-| PostgreSQL | 独立 StatefulSet + PVC | 数据持久化，独立扩缩容 |
-| 作业执行 | Receptor 网格 | 支持大规模集群，多节点分发 |
-| Projects 存储 | 独立 PV (SFS Turbo RWX) | Web 和 Task 共享项目文件 |
-| 镜像仓库 | 华为云 SWR | 国内网络稳定，避免 Docker Hub/quay.io 不通 |
-
-## 镜像清单
-
-所有镜像已提前推送到华为云 SWR:
-
-| 镜像 | 版本 | SWR 地址 |
-|------|------|----------|
-| awx | 24.6.1 | `swr.cn-east-2.../dx_x2era/awx:24.6.1` |
-| awx-operator | 2.19.1 | `swr.cn-east-2.../dx_x2era/awx-operator:2.19.1` |
-| awx-ee | 24.6.1 | `swr.cn-east-2.../dx_x2era/awx-ee:24.6.1` |
-| redis | 7 | `swr.cn-east-2.../dx_x2era/redis:7` |
-| postgresql-15 | latest | `swr.cn-east-2.../dx_x2era/postgresql-15:latest` |
-
-## 存储
-
-| 卷 | 类型 | 大小 | 用途 |
-|----|------|------|------|
-| PostgreSQL PVC | `csi-disk` (SSD) | 10Gi | AWX 数据库 |
-| Projects PV | `csi-sfsturbo` (SFS Turbo) | 100Gi | Playbook 项目持久化 |
-
-## 跨平台发布 (OSC)
-
-通过华为云 OSC 服务包，可部署到:
-
-| 平台 | 说明 |
-|------|------|
-| **CCE** | 华为云 K8s 集群 |
-| **UCS** | 多云/混合云/边缘 |
-| **AttachedCluster** | 任意 K8s 集群 |
+所有镜像已推送到华为云 SWR `swr.cn-east-2.myhuaweicloud.com/dx_x2era/`。部署时通过 `--set` 传入 SWR 临时凭证。
 
 ## 安全说明
 
 - `infra-cce.yaml` (kubeconfig) → `.gitignore`
-- `ssl/` 目录 (TLS 证书) → `.gitignore`
-- SWR 凭证 → 部署时通过 `--set` 传入，不写死
-- admin 密码 → 部署时通过 `--set admin.password=` 设置
-
-## 配置参考
-
-### values.yaml 主要参数
-
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| `global.imageRegistry` | `swr.cn-east-2.../dx_x2era` | SWR 镜像仓库 |
-| `swr.username` | `""` | SWR 登录用户名 |
-| `swr.password` | `""` | SWR 登录密码/token |
-| `admin.password` | `"CHANGE-ME-PLEASE!"` | AWX admin 密码 |
-| `service.type` | `LoadBalancer` | 服务暴露方式 |
-| `storage.postgres.size` | `10Gi` | PostgreSQL 磁盘大小 |
-| `storage.projects.enabled` | `true` | 是否启用 Projects 持久化 |
-| `storage.projects.existingClaim` | `""` | 使用已有的 PVC 名称 |
+- `ssl/` 证书目录 → `.gitignore`
+- SWR 凭证 → 运行时 `--set`，不写死
+- 管理员密码 → 运行时 `--set`，不写死

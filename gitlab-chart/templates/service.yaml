@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gitlab
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: gitlab
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.service.httpPort }}
+      targetPort: 80
+      protocol: TCP
+    - name: https
+      port: {{ .Values.service.httpsPort }}
+      targetPort: 443
+      protocol: TCP
+    - name: ssh
+      port: {{ .Values.service.sshPort }}
+      targetPort: 22
+      protocol: TCP
+  selector:
+    app: gitlab

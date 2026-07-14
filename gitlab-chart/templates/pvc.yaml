@@ -1,0 +1,18 @@
+{{- $root := . }}
+{{- range $name, $cfg := .Values.storage }}
+{{- if not $cfg.existingClaim }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: gitlab-{{ $name }}
+  namespace: {{ $root.Values.global.namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ $cfg.size }}
+  storageClassName: {{ $cfg.storageClass }}
+---
+{{- end }}
+{{- end }}

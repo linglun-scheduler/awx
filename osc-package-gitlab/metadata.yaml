@@ -1,0 +1,20 @@
+name: gitlab
+version: "1.0.0"
+appVersion: "17.3.0"
+description: "GitLab CE on Huawei Cloud CCE"
+displayName: "GitLab CE"
+briefDescription: "GitLab Community Edition - Git repository management, CI/CD, and DevOps platform."
+source: ISV
+architecture:
+  - x86_64
+  - aarch64
+categories:
+  - DevOps
+maintainers:
+  - name: dx_x2era
+    email: dx_x2era@example.com
+provider:
+  name: dx_x2era
+  url: https://github.com/linglun-scheduler/awx
+scenes:
+  - CCE

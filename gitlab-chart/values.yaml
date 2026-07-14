@@ -1,0 +1,66 @@
+# ── GitLab CE Helm Chart Values ──
+
+global:
+  imageRegistry: swr.cn-east-2.myhuaweicloud.com/dx_x2era
+  namespace: gitlab
+
+# ── 镜像 ──
+images:
+  gitlab: gitlab-ce:17.3.0-ce.0
+  pullPolicy: IfNotPresent
+
+# ── SWR 凭证 (部署时传入) ──
+swr:
+  username: ""
+  password: ""
+
+# ── 管理员 ──
+admin:
+  password: "CHANGE-ME-PLEASE!"
+  email: admin@example.com
+
+# ── 域名 ──
+domain: gitlab.example.com
+
+# ── 服务 ──
+service:
+  type: LoadBalancer
+  httpPort: 80
+  httpsPort: 443
+  sshPort: 22
+
+# ── 存储 ──
+storage:
+  # Git 仓库数据
+  data:
+    size: 50Gi
+    storageClass: csi-disk
+    existingClaim: ""
+  # 配置文件
+  config:
+    size: 10Gi
+    storageClass: csi-disk
+    existingClaim: ""
+  # 日志
+  logs:
+    size: 10Gi
+    storageClass: csi-disk
+    existingClaim: ""
+
+# ── 资源 ──
+resources:
+  requests:
+    cpu: 2
+    memory: 4Gi
+
+# ── 副本 ──
+replicas: 1
+
+# ── SMTP ──
+smtp:
+  enabled: false
+  host: ""
+  port: 587
+  user: ""
+  password: ""
+  domain: ""

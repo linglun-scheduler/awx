@@ -1,0 +1,14 @@
+apiVersion: v2
+name: gitlab
+description: GitLab CE on Huawei Cloud CCE
+type: application
+version: 1.0.0
+appVersion: "17.3.0"
+maintainers:
+  - name: dx_x2era
+    email: dx_x2era@example.com
+annotations:
+  source: ISV
+  categories: DevOps
+  architecture: x86_64,aarch64
+  scenes: CCE

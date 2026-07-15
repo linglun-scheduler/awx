@@ -33,7 +33,7 @@ spec:
           env:
             - name: GITLAB_OMNIBUS_CONFIG
               value: |
-                external_url 'https://{{ .Values.domain }}'
+                external_url 'http://{{ .Values.domain }}'
                 gitlab_rails['initial_root_password'] = File.read('/etc/gitlab-admin-password/password').strip
                 {{- if .Values.smtp.enabled }}
                 gitlab_rails['smtp_enable'] = true
@@ -59,18 +59,15 @@ spec:
             requests:
               cpu: {{ .Values.resources.requests.cpu }}
               memory: {{ .Values.resources.requests.memory }}
-          livenessProbe:
-            httpGet:
-              path: /-/health
-              port: 80
-            initialDelaySeconds: 120
-            periodSeconds: 30
+          # livenessProbe temporarily disabled for initial setup
+          # GitLab first boot takes 5-10 minutes due to reconfigure
           readinessProbe:
             httpGet:
-              path: /
+              path: /users/sign_in
               port: 80
-            initialDelaySeconds: 60
-            periodSeconds: 10
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            failureThreshold: 30
       volumes:
         - name: admin-password
           secret:

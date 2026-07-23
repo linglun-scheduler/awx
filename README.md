@@ -60,6 +60,7 @@ OSC 控制台 → 我的服务 → 私有服务 → 上传服务 → 选择 .zip
 
 | Tag | 产品 | 下载 |
 |-----|------|------|
+| [v1.0.1](https://github.com/linglun-scheduler/cce-deploy/releases/tag/v1.0.1) | AWX 24.6.1 | `.zip` + `.tgz`（OSC 包含 AWX CRD） |
 | [v1.0.0](https://github.com/linglun-scheduler/cce-deploy/releases/tag/v1.0.0) | AWX 24.6.1 | `.zip` + `.tgz` |
 | [v1.1.0](https://github.com/linglun-scheduler/cce-deploy/releases/tag/v1.1.0) | GitLab CE 17.3.0 | `.zip` + `.tgz` |
 

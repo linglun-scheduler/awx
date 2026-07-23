@@ -2,7 +2,7 @@ apiVersion: v2
 name: awx
 description: Ansible AWX on Huawei Cloud CCE - Helm Chart
 type: application
-version: 1.0.0
+version: 1.0.1
 appVersion: "24.6.1"
 keywords:
   - ansible

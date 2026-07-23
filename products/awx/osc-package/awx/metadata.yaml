@@ -1,5 +1,5 @@
 name: awx
-version: "1.0.0"
+version: "1.0.1"
 appVersion: "24.6.1"
 description: "Ansible AWX on Huawei Cloud CCE"
 displayName: "AWX"

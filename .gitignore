@@ -13,6 +13,7 @@ products/*/chart/*.tgz
 products/*/osc-package/*.zip
 products/*/deploy/*.tgz
 products/*/deploy/*.zip
+.release-build/
 
 # Docker
 .docker/
